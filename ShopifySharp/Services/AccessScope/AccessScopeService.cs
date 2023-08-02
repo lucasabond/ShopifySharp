@@ -1,6 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using ShopifySharp.Enums;
+using ShopifySharp.Infrastructure;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ShopifySharp
 {
@@ -19,8 +23,34 @@ namespace ShopifySharp
         /// <param name="shopAccessToken">An API access token for the shop.</param>
         public AccessScopeService(string myShopifyUrl, string shopAccessToken) : base(myShopifyUrl, shopAccessToken) { }
 
-        /// <inheritdoc />
-        public virtual async Task<IEnumerable<AccessScope>> ListAsync(CancellationToken cancellationToken = default) => 
-            await ExecuteGetAsync<IEnumerable<AccessScope>>("oauth/access_scopes.json", "access_scopes", cancellationToken: cancellationToken);
+        /// <summary>
+        /// Retrieves a list of access scopes associated to the access token.
+        /// </summary>
+        public virtual async Task<IEnumerable<AccessScope>> ListAsync(CancellationToken cancellationToken = default)
+        {
+            return await ExecuteGetAsync<IEnumerable<AccessScope>>("oauth/access_scopes.json", "access_scopes", cancellationToken: cancellationToken);
+        }
+
+        /// <summary> 
+        ///  Requests a subset of granular access scopes for an individual shop installation. 
+        /// </summary> 
+        public virtual async Task<IEnumerable<AccessScope>> RequestGranularAccessScopesAsync(IEnumerable<AuthorizationScope> requestedScopes, CancellationToken cancellationToken = default) 
+        {
+            return await RequestGranularAccessScopesAsync(requestedScopes.Select(s => s.ToSerializedString()), cancellationToken); 
+        }
+
+        /// <summary> 
+        ///  Requests a subset of granular access scopes for an individual shop installation. 
+        /// </summary> 
+        public virtual async Task<IEnumerable<AccessScope>> RequestGranularAccessScopesAsync(IEnumerable<string> requestedScopes, CancellationToken cancellationToken = default)
+        {
+            var content = new
+            {
+                requested_scopes = requestedScopes,
+            };
+            return await ExecutePostAsync<IEnumerable<AccessScope>>("request_granular_access_scopes.json", "access_scopes", cancellationToken: cancellationToken, content);
+        }
     }
 }
+
+
